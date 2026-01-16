@@ -52,7 +52,7 @@ fi
 
 BASHRC="$HOME/.bashrc"
 
-# Remove old block
+# Remove old block safely
 sed -i '/# ===============================/,/# END yt-dlp shortcuts/d' "$BASHRC" 2>/dev/null || true
 
 cat >> "$BASHRC" <<'EOF'
@@ -189,15 +189,9 @@ __handle_enter() {
     READLINE_POINT=0
 
     case "$line" in
-      *youtube.com*|*youtu.be*)
-        yt "$line"
-        ;;
-      *pornhub.com*|*youporn.com*|*xhamster.com*)
-        ph "$line"
-        ;;
-      *)
-        echo "Unknown site: $line"
-        ;;
+      *youtube.com*|*youtu.be*) yt "$line" ;;
+      *pornhub.com*|*youporn.com*|*xhamster.com*) ph "$line" ;;
+      *) echo "Unknown site: $line" ;;
     esac
     return
   fi

@@ -52,7 +52,7 @@ fi
 
 BASHRC="$HOME/.bashrc"
 
-# Remove old block safely
+# Remove old block
 sed -i '/# ===============================/,/# END yt-dlp shortcuts/d' "$BASHRC" 2>/dev/null || true
 
 cat >> "$BASHRC" <<'EOF'
@@ -65,66 +65,43 @@ MOVIES="__MOVIES__"
 MUSIC="__MUSIC__"
 PHMOVIES="__PHMOVIES__"
 
-# aria2 (legal + stable)
 ARIA2_ARGS="-x 16 -s 16 -k 1M --file-allocation=trunc"
 
-# LIVE single-line progress (safe for YT + HLS)
 PROGRESS_FMT="download:%(info.title)s | %(progress._percent_str)s | %(progress._downloaded_bytes_str)s | %(progress._speed_str)s | ETA %(progress._eta_str)s"
 
-# -------- yt (720p) --------
 yt() {
-  yt-dlp \
-    -N 16 \
+  yt-dlp -N 16 \
     --downloader aria2c \
     --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet \
-    --no-warnings \
-    --progress \
+    --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=720][ext=mp4]+ba/b[height<=720]" \
     --merge-output-format mp4 \
-    -o "$MOVIES/%(title)s.%(ext)s" \
-    "$@"
+    -o "$MOVIES/%(title)s.%(ext)s" "$@"
 }
 
-# -------- yt4k (1080p) --------
 yt4k() {
-  yt-dlp \
-    -N 16 \
+  yt-dlp -N 16 \
     --downloader aria2c \
     --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet \
-    --no-warnings \
-    --progress \
+    --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=1080][ext=mp4]+ba/b[height<=1080]" \
     --merge-output-format mp4 \
-    -o "$MOVIES/%(title)s.%(ext)s" \
-    "$@"
+    -o "$MOVIES/%(title)s.%(ext)s" "$@"
 }
 
-# -------- yts (MP3) --------
 yts() {
-  yt-dlp \
-    -N 16 \
+  yt-dlp -N 16 \
     --downloader aria2c \
     --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet \
-    --no-warnings \
-    --progress \
+    --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bestaudio" \
-    --extract-audio \
-    --audio-format mp3 \
-    --audio-quality 0 \
-    --embed-metadata \
-    -o "$MUSIC/%(title)s.%(ext)s" \
-    "$@"
+    --extract-audio --audio-format mp3 \
+    --audio-quality 0 --embed-metadata \
+    -o "$MUSIC/%(title)s.%(ext)s" "$@"
 }
-
-# ===============================
-# ph – adult sites (HLS LIVE)
-# ===============================
 
 ph() {
   [ -z "$1" ] && { echo "Usage: ph <url>"; return 1; }
@@ -136,49 +113,26 @@ ph() {
   UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
 
   case "$URL" in
-    *pornhub.com*)
-      COOKIE_URL="https://mega.nz/file/FpBzSTCS#T1X0T0VLeivXBFow2pRzIeTvkR9eK51xaNQLAr6DPHE"
-      ;;
-    *youporn.com*)
-      COOKIE_URL="https://mega.nz/file/8gI1HBjT#4Ep12c_a7FHg0IC4Ktow_DIt3Ujq5LWgkdk7hEOtFok"
-      ;;
-    *xhamster.com*)
-      COOKIE_URL="https://mega.nz/file/A8Q0wKwJ#jV417fKcMcGbCsAZpvp9AwgMSs7ujDcV4RtcvwcRfFY"
-      ;;
-    *)
-      echo "Unsupported site"
-      rm -rf "$TMP"
-      return 1
-      ;;
+    *pornhub.com*) COOKIE_URL="https://mega.nz/file/FpBzSTCS#T1X0T0VLeivXBFow2pRzIeTvkR9eK51xaNQLAr6DPHE" ;;
+    *youporn.com*) COOKIE_URL="https://mega.nz/file/8gI1HBjT#4Ep12c_a7FHg0IC4Ktow_DIt3Ujq5LWgkdk7hEOtFok" ;;
+    *xhamster.com*) COOKIE_URL="https://mega.nz/file/A8Q0wKwJ#jV417fKcMcGbCsAZpvp9AwgMSs7ujDcV4RtcvwcRfFY" ;;
+    *) echo "Unsupported site"; rm -rf "$TMP"; return 1 ;;
   esac
 
   megatools dl "$COOKIE_URL" --path "$TMP" || { rm -rf "$TMP"; return 1; }
   COOKIE_FILE=$(ls "$TMP"/*.txt 2>/dev/null)
 
-  yt-dlp \
-    --cookies "$COOKIE_FILE" \
-    --user-agent "$UA" \
-    --force-ipv4 \
-    --retries infinite \
-    --fragment-retries infinite \
-    --retry-sleep fragment:0.5 \
-    --concurrent-fragments 4 \
-    --hls-use-mpegts \
-    --quiet \
-    --no-warnings \
-    --progress \
+  yt-dlp --cookies "$COOKIE_FILE" --user-agent "$UA" \
+    --force-ipv4 --retries infinite --fragment-retries infinite \
+    --concurrent-fragments 4 --hls-use-mpegts \
+    --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=720]/b[height<=720]" \
     --merge-output-format mp4 \
-    -o "$PHMOVIES/%(title)s.%(ext)s" \
-    "$URL"
+    -o "$PHMOVIES/%(title)s.%(ext)s" "$URL"
 
   rm -rf "$TMP"
 }
-
-# ===============================
-# Auto-handle pasted URLs (SAFE)
-# ===============================
 
 __handle_enter() {
   local line="$READLINE_LINE"
@@ -204,7 +158,6 @@ bind -x '"\C-m":__handle_enter'
 # END yt-dlp shortcuts
 EOF
 
-# Inject chosen paths
 sed -i "s|__MOVIES__|$MOVIES|g" "$BASHRC"
 sed -i "s|__MUSIC__|$MUSIC|g" "$BASHRC"
 sed -i "s|__PHMOVIES__|$PHMOVIES|g" "$BASHRC"

@@ -52,7 +52,7 @@ fi
 
 BASHRC="$HOME/.bashrc"
 
-# Remove old block
+# Remove old block safely
 sed -i '/# ===============================/,/# END yt-dlp shortcuts/d' "$BASHRC" 2>/dev/null || true
 
 cat >> "$BASHRC" <<'EOF'
@@ -66,41 +66,27 @@ MUSIC="__MUSIC__"
 PHMOVIES="__PHMOVIES__"
 
 ARIA2_ARGS="-x 16 -s 16 -k 1M --file-allocation=trunc"
-
 PROGRESS_FMT="download:%(info.title)s | %(progress._percent_str)s | %(progress._downloaded_bytes_str)s | %(progress._speed_str)s | ETA %(progress._eta_str)s"
 
 yt() {
-  yt-dlp -N 16 \
-    --downloader aria2c \
-    --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet --no-warnings --progress \
-    --progress-template "$PROGRESS_FMT" \
+  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+    --quiet --no-warnings --progress --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=720][ext=mp4]+ba/b[height<=720]" \
-    --merge-output-format mp4 \
-    -o "$MOVIES/%(title)s.%(ext)s" "$@"
+    --merge-output-format mp4 -o "$MOVIES/%(title)s.%(ext)s" "$@"
 }
 
 yt4k() {
-  yt-dlp -N 16 \
-    --downloader aria2c \
-    --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet --no-warnings --progress \
-    --progress-template "$PROGRESS_FMT" \
+  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+    --quiet --no-warnings --progress --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=1080][ext=mp4]+ba/b[height<=1080]" \
-    --merge-output-format mp4 \
-    -o "$MOVIES/%(title)s.%(ext)s" "$@"
+    --merge-output-format mp4 -o "$MOVIES/%(title)s.%(ext)s" "$@"
 }
 
 yts() {
-  yt-dlp -N 16 \
-    --downloader aria2c \
-    --downloader-args "aria2c:$ARIA2_ARGS" \
-    --quiet --no-warnings --progress \
-    --progress-template "$PROGRESS_FMT" \
-    -f "bestaudio" \
-    --extract-audio --audio-format mp3 \
-    --audio-quality 0 --embed-metadata \
-    -o "$MUSIC/%(title)s.%(ext)s" "$@"
+  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+    --quiet --no-warnings --progress --progress-template "$PROGRESS_FMT" \
+    -f "bestaudio" --extract-audio --audio-format mp3 --audio-quality 0 \
+    --embed-metadata -o "$MUSIC/%(title)s.%(ext)s" "$@"
 }
 
 ph() {
@@ -125,23 +111,19 @@ ph() {
   yt-dlp --cookies "$COOKIE_FILE" --user-agent "$UA" \
     --force-ipv4 --retries infinite --fragment-retries infinite \
     --concurrent-fragments 4 --hls-use-mpegts \
-    --quiet --no-warnings --progress \
-    --progress-template "$PROGRESS_FMT" \
+    --quiet --no-warnings --progress --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=720]/b[height<=720]" \
-    --merge-output-format mp4 \
-    -o "$PHMOVIES/%(title)s.%(ext)s" "$URL"
+    --merge-output-format mp4 -o "$PHMOVIES/%(title)s.%(ext)s" "$URL"
 
   rm -rf "$TMP"
 }
 
 __handle_enter() {
   local line="$READLINE_LINE"
-
   if [[ "$line" == http://* || "$line" == https://* ]]; then
     echo "$line"
     READLINE_LINE=""
     READLINE_POINT=0
-
     case "$line" in
       *youtube.com*|*youtu.be*) yt "$line" ;;
       *pornhub.com*|*youporn.com*|*xhamster.com*) ph "$line" ;;
@@ -149,7 +131,6 @@ __handle_enter() {
     esac
     return
   fi
-
   builtin bind '"\C-m":accept-line'
 }
 

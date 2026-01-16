@@ -4,7 +4,7 @@ set -e
 echo "🔥 yt-dlp Universal Setup"
 
 # Detect platform
-if echo "$PREFIX" | grep -q "com.termux"; then
+if [[ "$PREFIX" == *"com.termux"* ]]; then
   PLATFORM="termux"
   echo "📱 Termux detected"
   pkg update -y
@@ -26,7 +26,8 @@ echo
 echo "Default paths:"
 echo "  Movies: $DEF_MOVIES"
 echo "  Music : $DEF_MUSIC"
-read -p "Use default paths? (y/n): " USEDEF
+
+read -p "Use default paths? (y/n): " USEDEF < /dev/tty
 
 case "$USEDEF" in
   y|Y|"")
@@ -34,32 +35,33 @@ case "$USEDEF" in
     MUSIC="$DEF_MUSIC"
     ;;
   *)
-    read -p "Enter Movies path: " MOVIES
-    read -p "Enter Music path: " MUSIC
+    read -p "Enter Movies path: " MOVIES < /dev/tty
+    read -p "Enter Music path: " MUSIC < /dev/tty
     ;;
 esac
 
-read -p "Use SAME folder for PH videos? (y/n): " SAME
+read -p "Use SAME folder for PH videos? (y/n): " SAME < /dev/tty
 
 case "$SAME" in
-  y|Y)
+  y|Y|"")
     PHMOVIES="$MOVIES"
     ;;
   *)
-    read -p "Enter PH video path: " PHMOVIES
+    read -p "Enter PH video path: " PHMOVIES < /dev/tty
     ;;
 esac
 
 mkdir -p "$MOVIES" "$MUSIC" "$PHMOVIES"
 
-if [ "$PLATFORM" = "termux" ]; then
+# Fix Termux storage permissions
+if [[ "$PLATFORM" == "termux" ]]; then
   chmod -R 775 "$MOVIES" "$MUSIC" "$PHMOVIES"
 fi
 
 BASHRC="$HOME/.bashrc"
 touch "$BASHRC"
 
-# Remove old block safely
+# Remove old block
 sed -i '/# ===============================/,/# END yt-dlp shortcuts/d' "$BASHRC" 2>/dev/null || true
 
 cat >> "$BASHRC" <<'EOF'
@@ -73,10 +75,13 @@ MUSIC="__MUSIC__"
 PHMOVIES="__PHMOVIES__"
 
 ARIA2_ARGS="-x 16 -s 16 -k 1M --file-allocation=trunc"
+
 PROGRESS_FMT="download:%(info.title)s | %(progress._percent_str)s | %(progress._downloaded_bytes_str)s | %(progress._speed_str)s | ETA %(progress._eta_str)s"
 
 yt() {
-  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+  yt-dlp -N 16 \
+    --downloader aria2c \
+    --downloader-args "aria2c:$ARIA2_ARGS" \
     --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=720][ext=mp4]+ba/b[height<=720]" \
@@ -85,7 +90,9 @@ yt() {
 }
 
 yt4k() {
-  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+  yt-dlp -N 16 \
+    --downloader aria2c \
+    --downloader-args "aria2c:$ARIA2_ARGS" \
     --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
     -f "bv*[height<=1080][ext=mp4]+ba/b[height<=1080]" \
@@ -94,10 +101,13 @@ yt4k() {
 }
 
 yts() {
-  yt-dlp -N 16 --downloader aria2c --downloader-args "aria2c:$ARIA2_ARGS" \
+  yt-dlp -N 16 \
+    --downloader aria2c \
+    --downloader-args "aria2c:$ARIA2_ARGS" \
     --quiet --no-warnings --progress \
     --progress-template "$PROGRESS_FMT" \
-    -f "bestaudio" --extract-audio --audio-format mp3 \
+    -f "bestaudio" \
+    --extract-audio --audio-format mp3 \
     --audio-quality 0 --embed-metadata \
     -o "$MUSIC/%(title)s.%(ext)s" "$@"
 }
@@ -106,6 +116,12 @@ yts() {
 EOF
 
 sed -i "s|__MOVIES__|$MOVIES|g" "$BASHRC"
+sed -i "s|__MUSIC__|$MUSIC|g" "$BASHRC"
+sed -i "s|__PHMOVIES__|$PHMOVIES|g" "$BASHRC"
+
+echo
+echo "✅ Setup complete!"
+echo "Run: source ~/.bashrc"sed -i "s|__MOVIES__|$MOVIES|g" "$BASHRC"
 sed -i "s|__MUSIC__|$MUSIC|g" "$BASHRC"
 sed -i "s|__PHMOVIES__|$PHMOVIES|g" "$BASHRC"
 
